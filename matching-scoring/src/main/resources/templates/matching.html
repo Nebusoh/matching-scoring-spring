@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <title>Matching-Scoring</title>
+
+    <script
+            src="https://code.jquery.com/jquery-3.6.1.js"
+            integrity="sha256-3zlB5s2uwoUzrXK3BT7AX3FyvojsraNFxCc2vC/7pNI="
+            crossorigin="anonymous"></script>
+
+    <script type="text/javascript">
+
+			$(document).ready(function() {
+
+                var idMatchingRule = localStorage.getItem('idValue');
+                var idPesoMatching = localStorage.getItem('idPesoMatching');
+                var pesoMatchingIdRule = idPesoMatching.split(',')[0];
+                var newFieldName = idPesoMatching.split(',')[1];
+                var resetValue = 0;
+                console.log(pesoMatchingIdRule);
+                console.log(newFieldName);
+
+
+                $.ajax({
+					    url : '/matching/api/matchingScoring',
+					    method : 'get',
+					    data: {
+					        idRegolaMatching: idMatchingRule
+					    },
+					    success : function(data) {
+
+                            for(var i = data.length - 1; i >= 0; i--) {
+
+                                $('#matching-table').append('<tr><td> La persona/azienda ' + data[i].match + ' risulta simile alla persona/azienda ' + data[i].matchedWith + ' con score: ' + data[i].score + ' </td></tr>');
+                            }
+                        }
+                });
+
+                $('#homePageBtn').on('click', function(event){
+
+                    if(newFieldName){
+
+                        $.ajax({
+					        url : '/matching/api/resetPeople/',
+							method : 'get',
+							success : function(data) {
+
+							}
+					    });
+
+					    $.ajax({
+							url : '/matching/api/resetCompanies/',
+							method : 'get',
+							success : function(data) {
+
+							}
+					    });
+
+                        $.ajax({
+
+                            url : '/matching/api/deletePesoMatching',
+                            method : 'delete',
+					        data : {
+
+                                idRegolaMatching : pesoMatchingIdRule,
+                                idCampo : newFieldName
+                            },
+                            success : function(data) {
+
+                            }
+                        });
+
+                        localStorage.setItem("idPesoMatching", resetValue);
+                    }
+                });
+
+            localStorage.setItem("idValue", resetValue);
+
+			});
+
+
+
+    </script>
+
+</head>
+
+<body style="background-color:grey;">
+
+<table id="matching-table" align="center">
+
+</table>
+
+<a href="./">
+    <button style="margin-top: 100px; width: 81px; height: 56px" id="homePageBtn">Home Page</button>
+</a>
+
+</body>
+
+</html>

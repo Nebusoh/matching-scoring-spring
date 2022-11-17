@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <title>Matching-Scoring</title>
+
+    <script
+            src="https://code.jquery.com/jquery-3.6.1.js"
+            integrity="sha256-3zlB5s2uwoUzrXK3BT7AX3FyvojsraNFxCc2vC/7pNI="
+            crossorigin="anonymous"></script>
+
+    <script type="text/javascript">
+
+			$(document).ready(function() {
+
+				$.ajax({
+
+					url : '/index/api/peopleRules',
+					method : 'get',
+					success : function(data) {
+
+						for(var i = data.length - 1; i >= 0; i--) {
+
+							$('#multi-select-people').append('<option id="' + data[i].id +  '" value="' + data[i].tipo + '">' + data[i].nome + '</option>');
+						}
+					}
+                });
+
+                $.ajax({
+
+					    url : '/index/api/companiesRules',
+					    method : 'get',
+					    success : function(data) {
+
+					    	for(var i = data.length - 1; i >= 0; i--) {
+
+							    $('#multi-select-companies').append('<option id="' + data[i].id + '" value="' + data[i].tipo + '">' + data[i].nome + '</option>');
+						    }
+					    }
+                });
+
+                $('#multi-select-people').change(function() {
+
+                    $('#selectedRule').val($('option:selected', this).text());
+                    $('#selectedRuleId').val($('option:selected', this).attr('id'));
+                    $('#selectedRuleType').val($('option:selected', this).val());
+                    $('#newFieldDiv').show('slow');
+                    $('#matchingButton').prop('disabled', false);
+                });
+
+                $('#multi-select-companies').change(function() {
+
+                    $('#selectedRule').val($('option:selected', this).text());
+                    $('#selectedRuleId').val($('option:selected', this).attr('id'));
+                    $('#selectedRuleType').val($('option:selected', this).val());
+                    $('#newFieldDiv').show('slow');
+                    $('#matchingButton').prop('disabled', false);
+                });
+
+                $('input:radio[name=yes_no]').change(function () {
+
+                    if ($(this).val() == 'si') {
+                        $('#newFieldForm').show('slow');
+                        $('#matchingButton').prop('disabled', true);
+                    }
+                    if ($(this).val() == 'no') {
+                        $('#newFieldForm').hide('slow');
+                        $('#matchingButton').prop('disabled', false);
+                    }
+                });
+
+                $('#newFieldForm').on('submit', function(e) {
+
+                    e.preventDefault();
+
+                    var newFieldIdRule = $('#selectedRuleId').val();
+                    var newFieldName = $('#newFieldName').val();
+                    var newFieldWeight = $('#newFieldWeight').val();
+
+                    $.ajax({
+					    url : '/index/api/pesoMatching',
+					    method : 'post',
+					    contentType : 'application/json',
+					    data: JSON.stringify({
+
+                            pesoMatchingId: {
+                                idRegolaMatching : newFieldIdRule,
+                                idCampo : newFieldName
+                            },
+                            peso : newFieldWeight
+					    }),
+					    success : function(data) {
+
+                            alert("Nuovo campo inserito correttamente");
+                            $('#setNewFieldDiv').show('slow');
+                            $('#newFieldDiv').hide('slow');
+                        }
+                    });
+
+                    if($('#selectedRuleType').val() == 'PF'){
+
+                        $.ajax({
+                            url: '/index/api/people',
+                            method: 'get',
+                            success : function(data) {
+
+                                for(var i = data.length - 1, y = 0; i >= 0; i--, y++) {
+
+                                    $('#submitNewField').append('<label for="newAttributefor-' + data[i].id + '"> Per la persona ' + data[i].nome + ' ' + data[i].cognome + ' :</label><br><input id="newAttributefor-' + data[i].id + '" type="text"><br>');
+                                }
+                                $('#submitNewField').append('<input type="submit" value="Submit"><br>');
+                            }
+                        });
+                    }
+
+                    else if($('#selectedRuleType').val() == 'PG'){
+
+                        $.ajax({
+                            url: '/index/api/companies',
+                            method: 'get',
+                            success : function(data) {
+
+                                for(var i = data.length - 1, y = 0; i >= 0; i--, y++) {
+
+                                    $('#submitNewField').append('<label for="newAttributefor-' + data[i].id + '"> Per l azienda ' + data[i].ragioneSociale + ' :</label><br><input id="newAttributefor-' + data[i].id + '" type="text"><br>');
+                                }
+                                $('#submitNewField').append('<input type="submit" value="Submit"><br>');
+                            }
+                        });
+                    }
+                });
+
+                $("#submitNewField").on('submit', function(event){
+
+                    event.preventDefault();
+
+                    var $inputs = $("#submitNewField :input[type= 'text']");
+
+                    if($('#selectedRuleType').val() == 'PF'){
+
+                        $inputs.each(function() {
+
+                        var id= $(this).attr('id').split('-')[1];
+                        var campo= $(this).val();
+
+                            $.ajax({
+								url : '/index/api/people/' + id,
+								method : 'put',
+								contentType : 'application/json',
+								data : JSON.stringify({
+									nuovoCampo : campo
+								}),
+								success : function(data) {
+
+								}
+					        });
+                        });
+                    }
+                    else if($('#selectedRuleType').val() == 'PG'){
+                         $inputs.each(function() {
+
+                            var id= $(this).attr('id').split('-')[1];
+                            var campo= $(this).val();
+
+                            $.ajax({
+								url : '/index/api/companies/' + id,
+								method : 'put',
+								contentType : 'application/json',
+								data : JSON.stringify({
+									nuovoCampo : campo
+								}),
+								success : function(data) {
+
+								}
+					        });
+                        });
+                    }
+                    alert("Nuovi campi inseriti correttamente");
+                    $('#setNewFieldDiv').hide('slow');
+                    $('#matchingButton').prop('disabled', false);
+                });
+
+                $('#matchingButton').on('click', function() {
+
+                    var idMatchingRule=  $('#selectedRuleId').val();
+                    var newFieldIdRule = $('#selectedRuleId').val();
+                    var newFieldName = $('#newFieldName').val();
+                    var pesoMatchingResetId = [newFieldIdRule, newFieldName].join(',');
+                    console.log(pesoMatchingResetId);
+                    localStorage.setItem('idValue', idMatchingRule);
+                    localStorage.setItem('idPesoMatching', pesoMatchingResetId);
+                 });
+
+            });
+
+
+
+
+    </script>
+
+</head>
+
+<body style="background-color:grey;">
+
+<h1 align="center"> Scegliere la regola di matching : </h1>
+
+
+<div class="select select--multiple" align="center">
+
+    <h2 style="margin-right: 350px"> Persone: </h2>
+
+    <select id="multi-select-people" multiple style="width: 300; height: 100">
+
+    </select>
+
+    <span class="focus"></span>
+
+</div>
+
+<div class="select select--multiple" align="center">
+
+    <h2 style="margin-right: 350px"> Aziende: </h2>
+
+    <select id="multi-select-companies" multiple style="width: 300; height: 100">
+
+    </select>
+
+    <span class="focus"></span>
+
+</div>
+
+<div style="margin-top: 20px">
+
+    <label for="selectedRule">Si è scelta di utilizzare la regola:</label>
+    <input type="text" id="selectedRule" style="width: 375px">
+    <input type="text" id="selectedRuleId" hidden>
+    <input type="text" id="selectedRuleType" hidden>
+
+</div>
+
+<div style="margin-top: 10px" hidden id="newFieldDiv">
+
+    <label>Si vuole aggiungere un nuovo campo alla regola scelta?</label>
+
+    <input type="radio" name="yes_no" value="si">Si</input>
+
+    <input type="radio" name="yes_no" value="no" checked>No</input>
+
+    <form style="margin-top: 10px;" hidden id="newFieldForm">
+
+        <label for="newFieldName">Nome campo: </label><br>
+        <input type="text" id="newFieldName" name="nome"><br>
+        <label for="newFieldWeight">Peso campo: </label><br>
+        <input type="text" id="newFieldWeight" name="peso"><br>
+        <input type="submit" value="Submit" style="margin-top: 5px;">
+
+    </form>
+
+</div>
+
+<div id="setNewFieldDiv" hidden>
+
+    <label>Inserire i nuovi campi:</label><br>
+
+    <form id="submitNewField">
+
+    </form>
+
+</div>
+
+<a href="./matching">
+    <button style="margin-left: 625px; margin-top: 100px; width: 81px; height: 56px" id="matchingButton" disabled>
+        Matching
+    </button>
+</a>
+
+</body>
+
+</html>
